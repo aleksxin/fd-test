@@ -2,13 +2,16 @@ package ocv.keit.bg.opencvapp;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -84,6 +87,15 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        ((Button) findViewById(R.id.button_id)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent=new Intent(MainActivity.this,TrainActivity.class);
+                MainActivity.this.startActivity(intent);
+
+            }
+        });
 
         // Example of a call to a native method
         //TextView tv = (TextView) findViewById(R.id.sample_text);
