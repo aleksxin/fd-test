@@ -11,6 +11,8 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TrainActivity extends Activity  {
@@ -35,8 +37,11 @@ public class TrainActivity extends Activity  {
                 "PhpMyAdmin"
         };
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>
-                (TrainActivity.this, android.R.layout.simple_list_item_1, DynamicListElements);
+        CameraViewsAdapter adapter = new CameraViewsAdapter(this, new ArrayList<String>(Arrays.asList(DynamicListElements)));
+        DynamicListView.setAdapter(adapter);
+
+     //   ArrayAdapter<String> adapter = new ArrayAdapter<String>()
+     //           (TrainActivity.this, android.R.layout.simple_list_item_1, DynamicListElements);
 
         DynamicListView.setAdapter(adapter);
 
