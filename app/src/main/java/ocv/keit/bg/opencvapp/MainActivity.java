@@ -50,14 +50,14 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     private Mat                    mRgba;
     private Mat                    mGray;
     private File mCascadeFile;
-    private CascadeClassifier mJavaDetector;
-    private DetectionBasedTracker  mNativeDetector;
+    public CascadeClassifier mJavaDetector;
+    public DetectionBasedTracker  mNativeDetector;
 
     private int                    mDetectorType       = JAVA_DETECTOR;
     private String[]               mDetectorName;
 
-    private float                  mRelativeFaceSize   = 0.2f;
-    private int                    mAbsoluteFaceSize   = 0;
+    public float                  mRelativeFaceSize   = 0.2f;
+    public int                    mAbsoluteFaceSize   = 0;
     private CameraBridgeViewBase mOpenCvCameraView;
 
     // Used in Camera selection from menu (when implemented)
@@ -92,6 +92,8 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             @Override
             public void onClick(View view) {
                 Intent intent=new Intent(MainActivity.this,TrainActivity.class);
+                Bundle extras = intent.getExtras();
+                extras.put
                 MainActivity.this.startActivity(intent);
 
             }

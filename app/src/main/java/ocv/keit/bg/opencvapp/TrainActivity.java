@@ -3,6 +3,8 @@ package ocv.keit.bg.opencvapp;
 import android.app.Activity;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.SurfaceView;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -11,12 +13,23 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class TrainActivity extends Activity  {
+import static ocv.keit.bg.opencvapp.MainActivity.JAVA_DETECTOR;
 
+public class TrainActivity extends Activity  implements CameraBridgeViewBase.CvCameraViewListener2 {
+    private static final String    TAG                 = "OCVSample::TrnActivity";
+    private JavaCameraView mOpenCvCameraView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);//super.onCreate(savedInstanceState);
@@ -24,17 +37,21 @@ public class TrainActivity extends Activity  {
 
         ListView DynamicListView = new ListView(this);
 
+        DynamicListView.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         final String[] DynamicListElements = new String[] {
                 "Android",
                 "PHP",
                 "Android Studio",
-                "Android Stfsdaio",
-                "Android Studfsadio",
-                "Android Studfsado",
-                "Android Stufasddio",
-                "Android Stufdsadio",
-                "Android Studidsf",
-                "PhpMyAdmin"
+               "Android Stfsdaio",
+                "Android Studfsadio"
+       //         "Android Studfsado",
+       //         "Android Stufasddio",
+          //      "Android Stufdsadio",
+          //      "Android Studidsf",
+          //      "PhpMyAdmin"
         };
 
         CameraViewsAdapter adapter = new CameraViewsAdapter(this, new ArrayList<String>(Arrays.asList(DynamicListElements)));
@@ -45,12 +62,20 @@ public class TrainActivity extends Activity  {
 
         DynamicListView.setAdapter(adapter);
 
+        mOpenCvCameraView=new JavaCameraView(this,CameraBridgeViewBase.CAMERA_ID_BACK);
+
+        //mOpenCvCameraView.setLayoutParams(new LinearLayout.LayoutParams(
+        //        LinearLayout.LayoutParams.MATCH_PARENT,
+        //        10));
+
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.addView(DynamicListView);
+        linearLayout.addView(mOpenCvCameraView);
 
         this.setContentView(linearLayout, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
 
-
+       // this.setContentView(mOpenCvCameraView);
         DynamicListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
@@ -64,6 +89,76 @@ public class TrainActivity extends Activity  {
 
         });
 
+       // JavaCameraView jvcmv=new JavaCameraView(this)
+
+
+        mOpenCvCameraView.setCvCameraViewListener(this);
+        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+       // mOpenCvCameraView.enableView();
+
     }
 
+    @Override
+    public void onCameraViewStarted(int width, int height) {
+     //   Log.i(TAG,"Started");
+    }
+
+    @Override
+    public void onCameraViewStopped() {
+      //  Log.i(TAG,"Stopped");
+    }
+
+    @Override
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+      Log.i(TAG,"Frame");
+       Mat mRgba = inputFrame.rgba();
+       Mat mGray = inputFrame.gray();
+
+
+        MatOfRect faces = new MatOfRect();
+
+        if (MainActivity.mDetectorType == JAVA_DETECTOR) {
+            if (mJavaDetector != null)
+                mJavaDetector.detectMultiScale(mGray, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
+                        new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
+        }
+        else if (mDetectorType == NATIVE_DETECTOR) {
+            if (mNativeDetector != null)
+                mNativeDetector.detect(mGray, faces);
+        }
+        else {
+            Log.e(TAG, "Detection method is not selected!");
+        }
+
+        Rect[] facesArray = faces.toArray();
+        for (int i = 0; i < facesArray.length; i++)
+            Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
+
+        return mRgba;
+        return  inputFrame.rgba();
+        //return null;
+    }
+
+    @Override
+    public void onResume() {
+
+        super.onResume();
+        mOpenCvCameraView.enableView();
+    }
+
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView.disableView();
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        super.onDestroy();
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView.disableView();
+    }
 }
