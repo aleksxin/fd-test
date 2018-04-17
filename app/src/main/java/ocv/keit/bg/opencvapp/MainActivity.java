@@ -34,7 +34,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class MainActivity extends AppCompatActivity  implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String    TAG                 = "OCVSample::Activity";
     private static final Scalar FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
@@ -93,7 +93,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             public void onClick(View view) {
                 Intent intent=new Intent(MainActivity.this,TrainActivity.class);
                 Bundle extras = intent.getExtras();
-                extras.put
+
                 MainActivity.this.startActivity(intent);
 
             }
