@@ -2,14 +2,13 @@ package ocv.keit.bg.opencvapp;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
+import android.content.DialogInterface;
 
 import android.app.FragmentManager;
 
 import android.os.Bundle;
 
 
-import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -17,15 +16,12 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.TextView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
@@ -38,8 +34,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
-public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,DialogInterface.OnDismissListener {
 
     private static final String    TAG                 = "OCVSample::Activity";
     private static final Scalar FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
@@ -72,6 +69,8 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     private Mat lastImage;
     private Rect[] lastFaces;
 
+    private ArrayList<String> mPeople;
+
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
    // Mat mRgba;
   //  Mat mRgbaF;
@@ -99,10 +98,13 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         ((Button) findViewById(R.id.button_id)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                FragmentManager fm = getFragmentManager();
-                TrainImagesDialog editNameDialogFragment = TrainImagesDialog.newInstance("Some Title");
-                editNameDialogFragment.show(fm, "fragment_edit_name");
-
+                if ((getLastFaces()!=null)&&(getLastFaces().length>0)) {
+                    lastImage=mRgba.clone();
+                    mOpenCvCameraView.disableView();
+                    FragmentManager fm = getFragmentManager();
+                    TrainImagesDialog editNameDialogFragment = TrainImagesDialog.newInstance("Some Title");
+                    editNameDialogFragment.show(fm, "fragment_edit_name");
+                }
                 /*Intent intent=new Intent(MainActivity.this,TrainActivity.class);
                 Bundle extras = intent.getExtras();
 
@@ -186,7 +188,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         mDetectorName = new String[2];
         mDetectorName[JAVA_DETECTOR] = "Java";
         mDetectorName[NATIVE_DETECTOR] = "Native (tracking)";
-
+        setPeople(new ArrayList<String>());
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
@@ -230,9 +232,11 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             Log.e(TAG, "Detection method is not selected!");
         }
 
-        Rect[] facesArray = faces.toArray();
-        for (int i = 0; i < facesArray.length; i++)
-            Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
+       // Rect[] facesArray = faces.toArray();
+        lastFaces=faces.toArray();
+     //   lastImage=mRgba.clone();
+        for (int i = 0; i < lastFaces.length; i++)
+            Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_RECT_COLOR, 3);
 
         return mRgba;
     }
@@ -329,5 +333,22 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public Rect[] getLastFaces() {
         return lastFaces;
+    }
+
+    @Override
+    public void onDismiss(DialogInterface dialogInterface) {
+        mOpenCvCameraView.enableView();
+    }
+
+    public ArrayList<String> getmPeople() {
+        return mPeople;
+    }
+
+    public void setPeople(ArrayList<String> mPeople) {
+        this.mPeople = mPeople;
+    }
+
+    public ArrayList<String> getPeople() {
+        return mPeople;
     }
 }

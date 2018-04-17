@@ -44,13 +44,13 @@ public class TrainActivity extends Activity  implements CameraBridgeViewBase.CvC
           //      "PhpMyAdmin"
         };
 
-        FacesListAdapter adapter = new FacesListAdapter(this, new ArrayList<String>(Arrays.asList(DynamicListElements)));
-        DynamicListView.setAdapter(adapter);
+        //FacesListAdapter adapter = new FacesListAdapter(this, new ArrayList<String>(Arrays.asList(DynamicListElements)));
+       // DynamicListView.setAdapter(adapter);
 
      //   ArrayAdapter<String> adapter = new ArrayAdapter<String>()
      //           (TrainActivity.this, android.R.layout.simple_list_item_1, DynamicListElements);
 
-        DynamicListView.setAdapter(adapter);
+        //DynamicListView.setAdapter(adapter);
 
         mOpenCvCameraView=new JavaCameraView(this,CameraBridgeViewBase.CAMERA_ID_BACK);
 

@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:imeOptions="flagNoExtractUi">
 
 
 
@@ -20,13 +21,15 @@
         android:contentDescription="@string/thumbnail"/>
 
     <AutoCompleteTextView
+        android:imeOptions="flagNoExtractUi"
         android:id="@+id/autoCompleteTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:layout_toEndOf="@id/recipe_list_thumbnail"
         android:layout_toStartOf="@id/recipe_list_detail"
-        android:text="AutoCompleteTextView" />
+        android:text="AutoCompleteTextView"
+        android:completionThreshold="1"/>
 
     <Button
         android:id="@+id/recipe_list_detail"

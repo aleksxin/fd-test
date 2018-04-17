@@ -1,13 +1,18 @@
 package ocv.keit.bg.opencvapp;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
 import java.util.ArrayList;
@@ -26,12 +31,18 @@ public class FacesListAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return mContext.getLastFaces().length;
+         if(mContext.getLastFaces()!=null)
+            return mContext.getLastFaces().length;
+         else
+             return 0;
     }
 
     @Override
     public Object getItem(int i) {
-        return new Mat(mContext.getLastImage(),mContext.getLastFaces()[i]);
+        if (mContext.getLastImage()!=null)
+            return new Mat(mContext.getLastImage(),mContext.getLastFaces()[i]);
+        else
+            return null;
     }
 
     @Override
@@ -43,12 +54,34 @@ public class FacesListAdapter extends BaseAdapter {
     public View getView(int i, View view, ViewGroup viewGroup) {
         LayoutInflater inflater=(LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View rowView = inflater.inflate(R.layout.cameralist_layout, viewGroup, false);
-        TextView titleTextView =
-                (TextView) rowView.findViewById(R.id.autoCompleteTextView);
+        AutoCompleteTextView titleTextView =
+                (AutoCompleteTextView) rowView.findViewById(R.id.autoCompleteTextView);
         Button mibut=(Button) rowView.findViewById(R.id.recipe_list_detail);
         mibut.setText("Train >");
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(mContext,
+                android.R.layout.simple_dropdown_item_1line, COUNTRIES);
+
+        titleTextView.setAdapter(adapter);
+
+
+
+        Mat mat=(Mat) getItem(i);
+        if (mat!=null) {
+            Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+
+            Utils.matToBitmap(mat, bm);
+
+
+            // find the imageview and draw it!
+            ImageView iv = (ImageView) rowView.findViewById(R.id.recipe_list_thumbnail);
+            iv.setImageBitmap(bm);
+        }
       //  titleTextView.setText((String) getItem(i));
 
         return rowView;
     }
+
+    private static final String[] COUNTRIES = new String[] {
+            "Belgium", "France", "Italy", "Germany", "Spain"
+    };
 }

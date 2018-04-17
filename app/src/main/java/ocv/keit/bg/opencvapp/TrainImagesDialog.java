@@ -1,7 +1,9 @@
 package ocv.keit.bg.opencvapp;
 
 
+import android.app.Activity;
 import android.app.DialogFragment;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 
@@ -24,6 +26,15 @@ public class TrainImagesDialog extends DialogFragment {
         // Use `newInstance` instead as shown below
     }
 
+    @Override
+    public void onDismiss(DialogInterface dialog) {
+        super.onDismiss(dialog);
+        final Activity activity = getActivity();
+        if (activity instanceof DialogInterface.OnDismissListener) {
+            ((DialogInterface.OnDismissListener) activity).onDismiss(dialog);
+        }
+    }
+
     public static TrainImagesDialog newInstance(String title) {
         TrainImagesDialog frag = new TrainImagesDialog();
         Bundle args = new Bundle();
@@ -44,7 +55,7 @@ public class TrainImagesDialog extends DialogFragment {
 
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         DynamicListView.setId(R.id.imageslistview);
-
+       // linearLayout.setIm
 
         //   ArrayAdapter<String> adapter = new ArrayAdapter<String>()
         //           (TrainActivity.this, android.R.layout.simple_list_item_1, DynamicListElements);
@@ -59,7 +70,7 @@ public class TrainImagesDialog extends DialogFragment {
 
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.addView(DynamicListView);
-        return linearLayout;
+                return linearLayout;
     }
 
     @Override
@@ -86,7 +97,7 @@ public class TrainImagesDialog extends DialogFragment {
                 //      "PhpMyAdmin"
         };
 
-        FacesListAdapter adapter = new FacesListAdapter(getActivity(), new ArrayList<String>(Arrays.asList(DynamicListElements)));
+        FacesListAdapter adapter = new FacesListAdapter((MainActivity)getActivity(), new ArrayList<String>(Arrays.asList(DynamicListElements)));
         ((ListView)view.findViewById(R.id.imageslistview)).setAdapter(adapter);
        // getDialog().getWindow().setSoftInputMode(
          //       WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
