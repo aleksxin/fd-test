@@ -23,13 +23,20 @@
     <AutoCompleteTextView
         android:imeOptions="flagNoExtractUi"
         android:id="@+id/autoCompleteTextView"
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:layout_toEndOf="@id/recipe_list_thumbnail"
         android:layout_toStartOf="@id/recipe_list_detail"
-        android:text="AutoCompleteTextView"
-        android:completionThreshold="1"/>
+        android:ems="10"
+        android:textSize="15sp"
+
+        android:dropDownWidth="fill_parent"
+        android:paddingRight="30dp"
+        android:paddingLeft="10dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:completionThreshold="0"/>
 
     <Button
         android:id="@+id/recipe_list_detail"

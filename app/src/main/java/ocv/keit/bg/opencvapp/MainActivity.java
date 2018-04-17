@@ -337,6 +337,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     public void onDismiss(DialogInterface dialogInterface) {
+        lastImage.release();
         mOpenCvCameraView.enableView();
     }
 
