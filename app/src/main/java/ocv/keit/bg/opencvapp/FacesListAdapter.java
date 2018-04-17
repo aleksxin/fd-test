@@ -8,6 +8,8 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.opencv.core.Mat;
+
 import java.util.ArrayList;
 
 public class FacesListAdapter extends BaseAdapter {
@@ -29,7 +31,7 @@ public class FacesListAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int i) {
-        return .get(i);
+        return new Mat(mContext.getLastImage(),mContext.getLastFaces()[i]);
     }
 
     @Override
@@ -39,12 +41,13 @@ public class FacesListAdapter extends BaseAdapter {
 
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
-        View rowView = mInflater.inflate(R.layout.cameralist_layout, viewGroup, false);
+        LayoutInflater inflater=(LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View rowView = inflater.inflate(R.layout.cameralist_layout, viewGroup, false);
         TextView titleTextView =
                 (TextView) rowView.findViewById(R.id.autoCompleteTextView);
         Button mibut=(Button) rowView.findViewById(R.id.recipe_list_detail);
-        mibut.setText("Da duhash!");
-        titleTextView.setText((String) getItem(i));
+        mibut.setText("Train >");
+      //  titleTextView.setText((String) getItem(i));
 
         return rowView;
     }
