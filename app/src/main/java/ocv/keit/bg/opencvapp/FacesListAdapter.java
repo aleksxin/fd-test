@@ -10,26 +10,26 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-public class CameraViewsAdapter extends BaseAdapter {
+public class FacesListAdapter extends BaseAdapter {
 
-    private Context mContext;
-    private LayoutInflater mInflater;
+    private MainActivity mContext;
+   // private LayoutInflater mInflater;
     private ArrayList<String> mDataSource;
 
-    public CameraViewsAdapter(Context context, ArrayList<String> items) {
+    public FacesListAdapter(MainActivity context, ArrayList<String> items) {
         mContext = context;
         mDataSource = items;
-        mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        //mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
     @Override
     public int getCount() {
-        return mDataSource.size();
+        return mContext.getLastFaces().length;
     }
 
     @Override
     public Object getItem(int i) {
-        return mDataSource.get(i);
+        return .get(i);
     }
 
     @Override

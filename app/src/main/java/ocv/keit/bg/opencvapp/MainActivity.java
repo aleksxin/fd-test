@@ -3,8 +3,13 @@ package ocv.keit.bg.opencvapp;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
+
+import android.app.FragmentManager;
+
 import android.os.Bundle;
+
+
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -34,7 +39,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MainActivity extends AppCompatActivity  implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static final String    TAG                 = "OCVSample::Activity";
     private static final Scalar FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
@@ -64,6 +69,9 @@ public class MainActivity extends AppCompatActivity  implements CameraBridgeView
     private boolean              mIsJavaCamera = true;
     private MenuItem mItemSwitchCamera = null;
 
+    private Mat lastImage;
+    private Rect[] lastFaces;
+
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
    // Mat mRgba;
   //  Mat mRgbaF;
@@ -91,11 +99,15 @@ public class MainActivity extends AppCompatActivity  implements CameraBridgeView
         ((Button) findViewById(R.id.button_id)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent=new Intent(MainActivity.this,TrainActivity.class);
+                FragmentManager fm = getFragmentManager();
+                TrainImagesDialog editNameDialogFragment = TrainImagesDialog.newInstance("Some Title");
+                editNameDialogFragment.show(fm, "fragment_edit_name");
+
+                /*Intent intent=new Intent(MainActivity.this,TrainActivity.class);
                 Bundle extras = intent.getExtras();
 
                 MainActivity.this.startActivity(intent);
-
+*/
             }
         });
 
@@ -308,5 +320,14 @@ public class MainActivity extends AppCompatActivity  implements CameraBridgeView
                 mNativeDetector.stop();
             }
         }
+    }
+
+
+    public Mat getLastImage() {
+        return lastImage;
+    }
+
+    public Rect[] getLastFaces() {
+        return lastFaces;
     }
 }

@@ -1,31 +1,21 @@
 package ocv.keit.bg.opencvapp;
 
 import android.app.Activity;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Rect;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-
-import static ocv.keit.bg.opencvapp.MainActivity.JAVA_DETECTOR;
 
 public class TrainActivity extends Activity  implements CameraBridgeViewBase.CvCameraViewListener2 {
     private static final String    TAG                 = "OCVSample::TrnActivity";
@@ -54,7 +44,7 @@ public class TrainActivity extends Activity  implements CameraBridgeViewBase.CvC
           //      "PhpMyAdmin"
         };
 
-        CameraViewsAdapter adapter = new CameraViewsAdapter(this, new ArrayList<String>(Arrays.asList(DynamicListElements)));
+        FacesListAdapter adapter = new FacesListAdapter(this, new ArrayList<String>(Arrays.asList(DynamicListElements)));
         DynamicListView.setAdapter(adapter);
 
      //   ArrayAdapter<String> adapter = new ArrayAdapter<String>()
