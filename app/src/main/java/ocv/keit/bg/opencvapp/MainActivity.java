@@ -3,6 +3,8 @@ package ocv.keit.bg.opencvapp;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -34,9 +36,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class MainActivity extends FragmentActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private static final String    TAG                 = "OCVSample::Activity";
+    public static final String    TAG                 = "OCVSample::Activity";
     private static final Scalar FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
     public static final int        JAVA_DETECTOR       = 0;
     public static final int        NATIVE_DETECTOR     = 1;
@@ -48,6 +50,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     private MenuItem               mItemType;
 
     private Mat                    mRgba;
+    public Mat lastImage;
     private Mat                    mGray;
     private File mCascadeFile;
     public CascadeClassifier mJavaDetector;
@@ -58,11 +61,14 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public float                  mRelativeFaceSize   = 0.2f;
     public int                    mAbsoluteFaceSize   = 0;
-    private CameraBridgeViewBase mOpenCvCameraView;
+    public CameraBridgeViewBase mOpenCvCameraView;
 
     // Used in Camera selection from menu (when implemented)
     private boolean              mIsJavaCamera = true;
     private MenuItem mItemSwitchCamera = null;
+
+    MyAppFragmentAdapter mSectionsPagerAdapter;
+    ViewPager mViewPager;
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
    // Mat mRgba;
@@ -75,30 +81,41 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         System.loadLibrary("detection_based_tracker");
     }
 
+    public Rect[] mFaces;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.face_detect_surface_view);
 
-        mOpenCvCameraView = (JavaCameraView) findViewById(R.id.fd_activity_surface_view);
+        //setContentView(R.layout.face_detect_surface_view);
 
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        setContentView(R.layout.main_layout);
+        mSectionsPagerAdapter = new MyAppFragmentAdapter(getSupportFragmentManager());
 
-        mOpenCvCameraView.setCvCameraViewListener(this);
+        // Set up the ViewPager with the sections adapter.
+        mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager.setAdapter(mSectionsPagerAdapter);
 
-        ((Button) findViewById(R.id.button_id)).setOnClickListener(new View.OnClickListener() {
+     //   mOpenCvCameraView = (JavaCameraView) findViewById(R.id.fd_activity_surface_view);
+
+      //  mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+
+        //mOpenCvCameraView.setCvCameraViewListener(this);
+
+/*        ((Button) findViewById(R.id.button_id)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent=new Intent(MainActivity.this,TrainActivity.class);
                 Bundle extras = intent.getExtras();
-                extras.put
+               // extras.put
                 MainActivity.this.startActivity(intent);
 
             }
         });
-
+*/
         // Example of a call to a native method
         //TextView tv = (TextView) findViewById(R.id.sample_text);
         //tv.setText(stringFromJNI());
@@ -118,7 +135,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
    // public native String stringFromJNI();
    // public native String validate(long matAddrGr, long matAddrRdba);
 
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+    public BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
@@ -202,7 +219,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             }
             mNativeDetector.setMinFaceSize(mAbsoluteFaceSize);
         }
-
+        lastImage=mRgba.clone();
         MatOfRect faces = new MatOfRect();
 
         if (mDetectorType == JAVA_DETECTOR) {
@@ -219,6 +236,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         }
 
         Rect[] facesArray = faces.toArray();
+        mFaces=faces.toArray();
         for (int i = 0; i < facesArray.length; i++)
             Imgproc.rectangle(mRgba, facesArray[i].tl(), facesArray[i].br(), FACE_RECT_COLOR, 3);
 
@@ -238,27 +256,19 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     public void onPause()
     {
         super.onPause();
-        if (mOpenCvCameraView != null)
-            mOpenCvCameraView.disableView();
+
     }
 
     @Override
     public void onResume()
     {
         super.onResume();
-        if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback);
-        } else {
-            Log.d(TAG, "OpenCV library found inside package. Using it!");
-            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
+
     }
 
     public void onDestroy() {
         super.onDestroy();
-        if (mOpenCvCameraView != null)
-            mOpenCvCameraView.disableView();
+
     }
 
     @Override
