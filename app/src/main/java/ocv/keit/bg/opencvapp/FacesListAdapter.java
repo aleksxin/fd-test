@@ -10,7 +10,9 @@ import android.widget.AutoCompleteTextView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
@@ -51,10 +53,10 @@ public class FacesListAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
+    public View getView(final int i, View view, ViewGroup viewGroup) {
         LayoutInflater inflater=(LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View rowView = inflater.inflate(R.layout.cameralist_layout, viewGroup, false);
-        AutoCompleteTextView titleTextView =
+        final AutoCompleteTextView titleTextView =
                 (AutoCompleteTextView) rowView.findViewById(R.id.autoCompleteTextView);
         Button mibut=(Button) rowView.findViewById(R.id.recipe_list_detail);
         mibut.setText("Train >");
@@ -76,6 +78,15 @@ public class FacesListAdapter extends BaseAdapter {
             ImageView iv = (ImageView) rowView.findViewById(R.id.recipe_list_thumbnail);
             iv.setImageBitmap(bm);
         }
+        mibut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!titleTextView.getText().toString().isEmpty()){
+                    mContext.trainRecognizer(titleTextView.getText().toString(),i);
+                }
+            //    Toast.makeText(mContext, titleTextView.getText(),Toast.LENGTH_LONG).show();
+            }
+        });
       //  titleTextView.setText((String) getItem(i));
 
         return rowView;

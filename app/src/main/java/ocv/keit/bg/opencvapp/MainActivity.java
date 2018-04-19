@@ -9,6 +9,7 @@ import android.app.FragmentManager;
 import android.os.Bundle;
 
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +17,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -23,10 +25,15 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.face.EigenFaceRecognizer;
+import org.opencv.face.FaceRecognizer;
+import org.opencv.face.FisherFaceRecognizer;
+import org.opencv.face.LBPHFaceRecognizer;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
@@ -34,7 +41,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 
 public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,DialogInterface.OnDismissListener {
 
@@ -70,6 +82,12 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     private Rect[] lastFaces;
 
     private ArrayList<String> mPeople;
+
+    boolean mTrained=false;
+
+    FaceRecognizer mFaceRecognizer;
+
+
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
    // Mat mRgba;
@@ -142,7 +160,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
                     // Load native library after(!) OpenCV initialization
                     System.loadLibrary("detection_based_tracker");
-
+                 //   System.loadLibrary("face");
                     try {
                         // load cascade file from application resources
                         InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
@@ -175,6 +193,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
                     }
 
                     mOpenCvCameraView.enableView();
+                    mFaceRecognizer= LBPHFaceRecognizer.create();
                 } break;
                 default:
                 {
@@ -189,6 +208,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         mDetectorName[JAVA_DETECTOR] = "Java";
         mDetectorName[NATIVE_DETECTOR] = "Native (tracking)";
         setPeople(new ArrayList<String>());
+
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
@@ -235,8 +255,22 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
        // Rect[] facesArray = faces.toArray();
         lastFaces=faces.toArray();
      //   lastImage=mRgba.clone();
-        for (int i = 0; i < lastFaces.length; i++)
+        for (int i = 0; i < lastFaces.length; i++) {
+            if ((mTrained)&&(mFaceRecognizer!=null)){
+                int[] fa=new int[]{};
+                double[] conf=new double[]{};
+                int pred = mFaceRecognizer.predict_label(new Mat(mRgba,lastFaces[i]));
+                Log.d(TAG,Integer.toString(pred));
+                mFaceRecognizer.predict(new Mat(mRgba,lastFaces[i]),new int[]{-1},new double[]{0.0});
+                if (fa.length>0){
+                    for (int j=0;j<fa.length;j++){
+                        Log.d(TAG,Integer.toString(fa[j])+" - "+Double.toString(conf[j]));
+                    }
+                }
+            }
+
             Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_RECT_COLOR, 3);
+        }
 
         return mRgba;
     }
@@ -351,5 +385,36 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     public ArrayList<String> getPeople() {
         return mPeople;
+    }
+
+    public void trainRecognizer(String person,int imageIndex){
+        if (!person.isEmpty()){
+            Log.d(TAG,"Training "+person);
+            int inx = mPeople.indexOf(person);
+            if (inx<0) {
+                    inx=mPeople.size();
+                    mPeople.add(person);
+                }
+            List<Mat> srcImages=new ArrayList<Mat>();
+            Mat mt = new Mat(lastImage,lastFaces[imageIndex]);
+            Imgproc.cvtColor(mt,mt,Imgproc.COLOR_RGB2GRAY);
+            srcImages.add(mt);
+            MatOfInt matOfInt = new MatOfInt();
+            List<Integer> lInx=new ArrayList<Integer>();
+            lInx.add(inx);
+            matOfInt.fromList(lInx);
+            try {
+
+                mFaceRecognizer.train(srcImages, matOfInt);
+                Toast.makeText(this,"Successfully trained "+person,Toast.LENGTH_LONG).show();
+                mTrained=true;
+            }
+            catch (Exception e){
+                Log.e(TAG,e.getMessage());
+            }
+
+
+
+        }
     }
 }

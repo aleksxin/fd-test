@@ -2,7 +2,7 @@
 # documentation: https://d.android.com/studio/projects/add-native-code.html
 
 set(pathToProject E:/Sasho/android/OpencvApp)
-set(pathToOpenCv E:/Sasho/android/OpenCV-android-sdk)
+set(pathToOpenCv C:/Users/alex/Documents/OtherProjects/opencv3-android-sdk-with-contrib/OpenCV-android-sdk)
 
 # Sets the minimum version of CMake required to build the native library.
 

@@ -11,7 +11,12 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
+
+                        //Choose the abi architectures that you would like to compile to
+
+
                 cppFlags "-std=c++11 -frtti -fexceptions"
+                abiFilters 'armeabi-v7a'
             }
         }
     }
@@ -26,6 +31,8 @@ android {
             path "CMakeLists.txt"
         }
     }
+
+
 }
 
 dependencies {
@@ -35,6 +42,6 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-    implementation project(':openCVLibrary341')
+    implementation project(':openCVLibrary340dev')
     implementation 'com.rmtheis:tess-two:6.0.3'
 }
