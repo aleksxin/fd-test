@@ -61,7 +61,7 @@ public class FacesListAdapter extends BaseAdapter {
         Button mibut=(Button) rowView.findViewById(R.id.recipe_list_detail);
         mibut.setText("Train >");
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(mContext,
-                android.R.layout.simple_dropdown_item_1line, COUNTRIES);
+                android.R.layout.simple_dropdown_item_1line, mContext.getmPeople());
 
         titleTextView.setAdapter(adapter);
 
@@ -82,7 +82,8 @@ public class FacesListAdapter extends BaseAdapter {
             @Override
             public void onClick(View view) {
                 if (!titleTextView.getText().toString().isEmpty()){
-                    mContext.trainRecognizer(titleTextView.getText().toString(),i);
+                    mContext.trainRecognizer(titleTextView.getText().toString(),mContext.getLastFaces()[i]);
+                    mDataSource.remove(i);
                 }
             //    Toast.makeText(mContext, titleTextView.getText(),Toast.LENGTH_LONG).show();
             }

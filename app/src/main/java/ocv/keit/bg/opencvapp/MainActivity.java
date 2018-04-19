@@ -24,9 +24,11 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -52,6 +54,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     private static final String    TAG                 = "OCVSample::Activity";
     private static final Scalar FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
+    private static final Scalar FACE_REC     = new Scalar(255, 0, 0, 255);
     public static final int        JAVA_DETECTOR       = 0;
     public static final int        NATIVE_DETECTOR     = 1;
 
@@ -79,6 +82,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     private MenuItem mItemSwitchCamera = null;
 
     private Mat lastImage;
+    private Mat mLastGrey;
     private Rect[] lastFaces;
 
     private ArrayList<String> mPeople;
@@ -86,6 +90,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     boolean mTrained=false;
 
     FaceRecognizer mFaceRecognizer;
+    Size mRecSize=new Size(0,0);
 
 
 
@@ -118,6 +123,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             public void onClick(View view) {
                 if ((getLastFaces()!=null)&&(getLastFaces().length>0)) {
                     lastImage=mRgba.clone();
+                    mLastGrey=mGray.clone();
                     mOpenCvCameraView.disableView();
                     FragmentManager fm = getFragmentManager();
                     TrainImagesDialog editNameDialogFragment = TrainImagesDialog.newInstance("Some Title");
@@ -257,17 +263,24 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
      //   lastImage=mRgba.clone();
         for (int i = 0; i < lastFaces.length; i++) {
             if ((mTrained)&&(mFaceRecognizer!=null)){
-                int[] fa=new int[]{};
-                double[] conf=new double[]{};
-                int pred = mFaceRecognizer.predict_label(new Mat(mRgba,lastFaces[i]));
-                Log.d(TAG,Integer.toString(pred));
-                mFaceRecognizer.predict(new Mat(mRgba,lastFaces[i]),new int[]{-1},new double[]{0.0});
-                if (fa.length>0){
-                    for (int j=0;j<fa.length;j++){
-                        Log.d(TAG,Integer.toString(fa[j])+" - "+Double.toString(conf[j]));
-                    }
+                int[] fa=new int[]{-1};
+                double[] conf=new double[]{0.0};
+                Mat mt=new Mat();
+                Imgproc.resize(new Mat(mGray,lastFaces[i]),mt,mRecSize);
+               // Imgproc.cvtColor(mt,mt,Imgproc.COLOR_RGBA2GRAY);
+                int pred = mFaceRecognizer.predict_label(mt);
+               // Log.d(TAG,Integer.toString(pred));
+                mFaceRecognizer.predict(mt,fa,conf);
+
+                if ((fa.length>0)&&(conf[0]>60)){
+                    Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_REC, 3);
+                    Imgproc.putText(mRgba, mPeople.get(fa[0])+ " - "+String.format ("%.1f", conf[0])+"%", new Point(lastFaces[i].x,lastFaces[i].y+lastFaces[i].height+25), Core.FONT_HERSHEY_SIMPLEX ,      // front face
+                            1, FACE_REC,2);
                 }
+                else
+                        Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_RECT_COLOR  , 3);
             }
+            else
 
             Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_RECT_COLOR, 3);
         }
@@ -387,7 +400,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         return mPeople;
     }
 
-    public void trainRecognizer(String person,int imageIndex){
+    public void trainRecognizer(String person,Rect rectFace){
         if (!person.isEmpty()){
             Log.d(TAG,"Training "+person);
             int inx = mPeople.indexOf(person);
@@ -395,23 +408,32 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
                     inx=mPeople.size();
                     mPeople.add(person);
                 }
-            List<Mat> srcImages=new ArrayList<Mat>();
-            Mat mt = new Mat(lastImage,lastFaces[imageIndex]);
-            Imgproc.cvtColor(mt,mt,Imgproc.COLOR_RGB2GRAY);
+            ArrayList<Mat> srcImages=new ArrayList<Mat>();
+            Mat mt = new Mat(mLastGrey,rectFace);
+          //  Imgproc.cvtColor(mt,mt,Imgproc.COLOR_RGBA2GRAY);
+            if ((mRecSize.height==0)||(mRecSize.width==0))
+                mRecSize=mt.size();
+            else
+                Imgproc.resize(mt,mt,mRecSize);
             srcImages.add(mt);
             MatOfInt matOfInt = new MatOfInt();
-            List<Integer> lInx=new ArrayList<Integer>();
+            ArrayList<Integer> lInx=new ArrayList<Integer>();
             lInx.add(inx);
             matOfInt.fromList(lInx);
             try {
+                if (mTrained)  mFaceRecognizer.update(srcImages,matOfInt);
+                        else
 
                 mFaceRecognizer.train(srcImages, matOfInt);
                 Toast.makeText(this,"Successfully trained "+person,Toast.LENGTH_LONG).show();
+                Log.d(TAG,"ppl: "+mPeople.toString()+" |size:"+mRecSize.toString()+" |added:"+Integer.toString(inx)+","+matOfInt.toString()+" |imageindex:"+rectFace.toString());
                 mTrained=true;
+               // lastFaces = ArrayUtils.removeElement(lastFaces, element);
             }
             catch (Exception e){
                 Log.e(TAG,e.getMessage());
             }
+           // lastFaces.remove(imageIndex);
 
 
 
