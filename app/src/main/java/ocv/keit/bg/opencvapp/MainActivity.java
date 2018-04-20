@@ -199,7 +199,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
                     }
 
                     mOpenCvCameraView.enableView();
-                    mFaceRecognizer= LBPHFaceRecognizer.create();
+                    mFaceRecognizer= LBPHFaceRecognizer.create();//1,8,8,8,0.7);
                 } break;
                 default:
                 {
@@ -268,13 +268,13 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
                 Mat mt=new Mat();
                 Imgproc.resize(new Mat(mGray,lastFaces[i]),mt,mRecSize);
                // Imgproc.cvtColor(mt,mt,Imgproc.COLOR_RGBA2GRAY);
-                int pred = mFaceRecognizer.predict_label(mt);
+               // int pred = mFaceRecognizer.predict_label(mt);
                // Log.d(TAG,Integer.toString(pred));
                 mFaceRecognizer.predict(mt,fa,conf);
 
-                if ((fa.length>0)&&(conf[0]>60)){
+                if ((fa.length>0)/*&&(conf[0]>20)*/){
                     Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_REC, 3);
-                    Imgproc.putText(mRgba, mPeople.get(fa[0])+ " - "+String.format ("%.1f", conf[0])+"%", new Point(lastFaces[i].x,lastFaces[i].y+lastFaces[i].height+25), Core.FONT_HERSHEY_SIMPLEX ,      // front face
+                    Imgproc.putText(mRgba, mPeople.get(fa[0])+ "~"+String.format ("%.1f", conf[0]), new Point(lastFaces[i].x,lastFaces[i].y+lastFaces[i].height+25), Core.FONT_HERSHEY_SIMPLEX ,      // front face
                             1, FACE_REC,2);
                 }
                 else
@@ -439,4 +439,49 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         }
     }
+    /*
+    Bitmap bmp = null;
+        try {
+        bmp = Bitmap.createBitmap(subimg.cols(), subimg.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(subimg, bmp);
+    } catch (CvException e) {
+        Log.d(TAG, e.getMessage());
+    }
+
+        subimg.release();
+
+
+    FileOutputStream out = null;
+
+    String filename = "frame.png";
+
+
+    File sd = new File(Environment.getExternalStorageDirectory() + "/frames");
+    boolean success = true;
+        if (!sd.exists()) {
+        success = sd.mkdir();
+    }
+        if (success) {
+        File dest = new File(sd, filename);
+
+        try {
+            out = new FileOutputStream(dest);
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+            // PNG is a lossless format, the compression factor (100) is ignored
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.d(TAG, e.getMessage());
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                    Log.d(TAG, "OK!!");
+                }
+            } catch (IOException e) {
+                Log.d(TAG, e.getMessage() + "Error");
+                e.printStackTrace();
+            }
+        }
+    }*/
 }
