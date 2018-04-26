@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <org.opencv.android.JavaCameraView
+    <ocv.keit.bg.opencvapp.CustomJavaCameraView
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:id="@+id/fd_activity_surface_view" />
@@ -13,5 +13,12 @@
     android:layout_height="wrap_content"
     android:layout_width="wrap_content"
     android:text="@string/self_destruct" />
+    <Button
+
+        android:id="@+id/button_test"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="@string/test_mess"
+        android:layout_below="@id/button_id"/>
 
 </RelativeLayout>

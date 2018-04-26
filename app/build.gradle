@@ -44,4 +44,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     implementation project(':openCVLibrary340dev')
     implementation 'com.rmtheis:tess-two:6.0.3'
+    implementation 'org.jmrtd:jmrtd:0.6.7'
+    implementation 'edu.ucar:jj2000:5.2'
+    implementation 'com.github.mhshams:jnbis:2.0.0'
 }

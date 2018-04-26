@@ -1,22 +1,31 @@
 package ocv.keit.bg.opencvapp;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 
 import android.app.FragmentManager;
 
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
 
 
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -40,6 +49,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,6 +99,8 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     boolean mTrained=false;
 
+    Bitmap mBitmap;
+
     FaceRecognizer mFaceRecognizer;
     Size mRecSize=new Size(0,0);
 
@@ -109,6 +121,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
+      //  mOpenCvCameraView.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.face_detect_surface_view);
 
@@ -121,6 +134,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         ((Button) findViewById(R.id.button_id)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+//                mOpenCvCameraView.tak
                 if ((getLastFaces()!=null)&&(getLastFaces().length>0)) {
                     lastImage=mRgba.clone();
                     mLastGrey=mGray.clone();
@@ -137,6 +151,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             }
         });
 
+        ((Button) findViewById(R.id.button_test)).setOnClickListener(new MyOnClickListener1());
         // Example of a call to a native method
         //TextView tv = (TextView) findViewById(R.id.sample_text);
         //tv.setText(stringFromJNI());
@@ -439,6 +454,29 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
         }
     }
+
+    private class MyOnClickListener implements View.OnClickListener {
+        @Override
+        public void onClick(View view) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Pick a color");
+            List<String> lst = ((CustomJavaCameraView) mOpenCvCameraView).getResolutionListString();
+            builder.setItems(lst.toArray(new CharSequence[lst.size()]), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // the user clicked on colors[which]
+                }
+            });
+            builder.show();
+        }
+    }
+
+    private class MyOnClickListener1 implements View.OnClickListener {
+        @Override
+        public void onClick(View view) {
+            ((CustomJavaCameraView)mOpenCvCameraView).takePicture(jpegCallback);
+        }
+    }
     /*
     Bitmap bmp = null;
         try {
@@ -484,4 +522,13 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             }
         }
     }*/
+
+    Camera.PictureCallback jpegCallback = new Camera.PictureCallback() {
+        public void onPictureTaken(byte[] data, Camera camera) {
+            mBitmap = BitmapFactory.decodeByteArray(data , 0, data .length);
+            FragmentManager fm = getFragmentManager();
+            TestFragmentDialog testFragmentDialog=TestFragmentDialog.newInstance();
+            testFragmentDialog.show(fm,"tag");
+        }
+    };
 }
