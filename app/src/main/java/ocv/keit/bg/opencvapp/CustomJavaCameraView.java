@@ -1,8 +1,11 @@
 package ocv.keit.bg.opencvapp;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.ListView;
 
 import org.opencv.android.JavaCameraView;
@@ -46,6 +49,53 @@ public class CustomJavaCameraView extends JavaCameraView {
     }
 
     public void takePicture(Camera.PictureCallback jpegCallback){
-        mCamera.takePicture(null,null,jpegCallback);
+        //disconnectCamera();
+        if (mCamera!=null) {
+
+            mCamera.takePicture(null, null, jpegCallback);
+        }
+        else {
+
+        Log.d("CUSTOM CAMERA","Camera is null!");
+        }
     }
+
+    public static Camera.Size getBestImageSize(Camera.Parameters parameters) {
+        // Camera.Size result=null;
+        //float dr = Float.MAX_VALUE;
+        // float ratio = (float)width/(float)height;
+        int max_val = 0;
+        Camera.Size ResSize = null;
+        for (Camera.Size size : parameters.getSupportedPictureSizes()) {
+
+            int this_size = size.height * size.width;
+            if (this_size > max_val) {
+                ResSize = size;
+                max_val = this_size;
+            }
+
+        }
+
+        return ResSize;
+    }
+
+    public void initCameraParams(){
+
+        Camera.Parameters parameters = mCamera.getParameters();
+
+        parameters.setPictureFormat(ImageFormat.JPEG);
+
+        //Camera.Size myBestSize =  getBestPreviewSize(surfaceView.getWidth() , surfaceView.getHeight(),parameters);
+
+        //parameters.setPreviewSize(myBestSize.width, myBestSize.height);
+
+
+        Camera.Size myBestSize = getBestImageSize(parameters);
+
+        parameters.setPictureSize(myBestSize.width, myBestSize.height);
+
+        mCamera.setParameters(parameters);
+    }
+
+
 }

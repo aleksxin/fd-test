@@ -10,6 +10,7 @@ import android.app.FragmentManager;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,7 +34,9 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfRect;
@@ -59,6 +62,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+
+import static android.graphics.Bitmap.Config.ARGB_8888;
 
 public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,DialogInterface.OnDismissListener {
 
@@ -99,7 +104,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     boolean mTrained=false;
 
-    Bitmap mBitmap;
+    Bitmap mBitmap=null;
 
     FaceRecognizer mFaceRecognizer;
     Size mRecSize=new Size(0,0);
@@ -206,6 +211,8 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
                         mNativeDetector = new DetectionBasedTracker(mCascadeFile.getAbsolutePath(), 0);
 
+
+
                         cascadeDir.delete();
 
                     } catch (IOException e) {
@@ -215,6 +222,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
                     mOpenCvCameraView.enableView();
                     mFaceRecognizer= LBPHFaceRecognizer.create();//1,8,8,8,0.7);
+                    //((CustomJavaCameraView)mOpenCvCameraView).initCameraParams();
                 } break;
                 default:
                 {
@@ -250,28 +258,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         mRgba = inputFrame.rgba();
         mGray = inputFrame.gray();
 
-        if (mAbsoluteFaceSize == 0) {
-            int height = mGray.rows();
-            if (Math.round(height * mRelativeFaceSize) > 0) {
-                mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
-            }
-            mNativeDetector.setMinFaceSize(mAbsoluteFaceSize);
-        }
-
-        MatOfRect faces = new MatOfRect();
-
-        if (mDetectorType == JAVA_DETECTOR) {
-            if (mJavaDetector != null)
-                mJavaDetector.detectMultiScale(mGray, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
-                        new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
-        }
-        else if (mDetectorType == NATIVE_DETECTOR) {
-            if (mNativeDetector != null)
-                mNativeDetector.detect(mGray, faces);
-        }
-        else {
-            Log.e(TAG, "Detection method is not selected!");
-        }
+        MatOfRect faces = getMatOfRectFaces(mGray);
 
        // Rect[] facesArray = faces.toArray();
         lastFaces=faces.toArray();
@@ -301,6 +288,35 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         }
 
         return mRgba;
+    }
+
+    @NonNull
+    private MatOfRect getMatOfRectFaces(Mat grey) {
+        if ((grey!=null)&&(!grey.empty())) {
+            if (mAbsoluteFaceSize == 0) {
+                int height = grey.rows();
+                if (Math.round(height * mRelativeFaceSize) > 0) {
+                    mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
+                }
+                mNativeDetector.setMinFaceSize(mAbsoluteFaceSize);
+            }
+
+            MatOfRect faces = new MatOfRect();
+
+            if (mDetectorType == JAVA_DETECTOR) {
+                if (mJavaDetector != null)
+                    mJavaDetector.detectMultiScale(grey, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
+                            new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
+            } else if (mDetectorType == NATIVE_DETECTOR) {
+                if (mNativeDetector != null)
+                    mNativeDetector.detect(grey, faces);
+            } else {
+                Log.e(TAG, "Detection method is not selected!");
+            }
+            return faces;
+        }
+        else
+            return null;
     }
 
 
@@ -399,7 +415,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     public void onDismiss(DialogInterface dialogInterface) {
-        lastImage.release();
+        if (lastImage!=null) lastImage.release();
         mOpenCvCameraView.enableView();
     }
 
@@ -474,7 +490,9 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     private class MyOnClickListener1 implements View.OnClickListener {
         @Override
         public void onClick(View view) {
+            ((CustomJavaCameraView)mOpenCvCameraView).initCameraParams();
             ((CustomJavaCameraView)mOpenCvCameraView).takePicture(jpegCallback);
+
         }
     }
     /*
@@ -525,10 +543,27 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     Camera.PictureCallback jpegCallback = new Camera.PictureCallback() {
         public void onPictureTaken(byte[] data, Camera camera) {
-            mBitmap = BitmapFactory.decodeByteArray(data , 0, data .length);
-            FragmentManager fm = getFragmentManager();
-            TestFragmentDialog testFragmentDialog=TestFragmentDialog.newInstance();
-            testFragmentDialog.show(fm,"tag");
+            Camera.Size picSize=camera.getParameters().getPictureSize();
+           // camera.getParameters().getPictureFormat()
+            System.out.println(camera.getParameters().getPictureFormat()+ "[ "+camera.getParameters().getPictureSize().width+","+camera.getParameters().getPictureSize().height+" ]");//data.length);
+            Mat photoMat = new Mat(picSize.width, picSize.height, CvType.CV_8UC3);
+
+            photoMat.put(0, 0, data);
+            Mat greyPhoto=new Mat(picSize.width,picSize.height,CvType.CV_8UC1);
+            Imgproc.cvtColor(photoMat,greyPhoto,Imgproc.COLOR_RGB2GRAY);
+            Imgproc.resize(greyPhoto,greyPhoto,new Size(2096,1572));
+            mBitmap = Bitmap.createBitmap(greyPhoto.width(), greyPhoto.height(), ARGB_8888);
+            Utils.matToBitmap(greyPhoto, mBitmap);
+          /*  MatOfRect faces=getMatOfRectFaces(greyPhoto);
+            if (faces.toArray().length>0) {
+                mBitmap = Bitmap.createBitmap(faces.toArray()[0].width, faces.toArray()[0].height, ARGB_8888);
+                Utils.matToBitmap(new Mat(photoMat,faces.toArray()[0]), mBitmap);
+                mOpenCvCameraView.disableView();
+*/
+                FragmentManager fm = getFragmentManager();
+                TestFragmentDialog testFragmentDialog = TestFragmentDialog.newInstance();
+                testFragmentDialog.show(fm, "tag");
+          //  }
         }
     };
 }
