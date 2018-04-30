@@ -10,12 +10,15 @@ import android.app.FragmentManager;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
 
 
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -38,6 +41,7 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
@@ -48,6 +52,7 @@ import org.opencv.face.EigenFaceRecognizer;
 import org.opencv.face.FaceRecognizer;
 import org.opencv.face.FisherFaceRecognizer;
 import org.opencv.face.LBPHFaceRecognizer;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
@@ -62,16 +67,28 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Random;
 
 import static android.graphics.Bitmap.Config.ARGB_8888;
+import static org.opencv.imgcodecs.Imgcodecs.CV_LOAD_IMAGE_ANYDEPTH;
+import static org.opencv.imgcodecs.Imgcodecs.CV_LOAD_IMAGE_COLOR;
+import static org.opencv.imgcodecs.Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE;
+import static org.opencv.imgcodecs.Imgcodecs.imdecode;
 
 public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,DialogInterface.OnDismissListener {
+
+    enum State
+    {
+        RED, GREEN, ZOOMIN, ZOOMOUT,PHOTO;
+    }
+
 
     private static final String    TAG                 = "OCVSample::Activity";
     private static final Scalar FACE_RECT_COLOR     = new Scalar(0, 255, 0, 255);
     private static final Scalar FACE_REC     = new Scalar(255, 0, 0, 255);
     public static final int        JAVA_DETECTOR       = 0;
     public static final int        NATIVE_DETECTOR     = 1;
+    private   static final int TIMERAFTERGREEN = 5000;
 
     private MenuItem               mItemFace50;
     private MenuItem               mItemFace40;
@@ -109,7 +126,11 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
     FaceRecognizer mFaceRecognizer;
     Size mRecSize=new Size(0,0);
 
-
+    private State mState=State.RED;
+    private String mStatus="";
+    private Scalar mRecColor= new Scalar(255, 0, 0, 255);
+    private CountDownTimer mTimer=null;
+    private Rect recta=new Rect(550,250,550,550);
 
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
    // Mat mRgba;
@@ -121,6 +142,8 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         System.loadLibrary("opencv_java3");
         System.loadLibrary("detection_based_tracker");
     }
+
+    private int mCtr = 10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -255,28 +278,70 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        final int marg=35;
         mRgba = inputFrame.rgba();
         mGray = inputFrame.gray();
 
-        MatOfRect faces = getMatOfRectFaces(mGray);
-
+        MatOfRect faces = getMatOfRectFaces(mGray);//new Mat(mGray,new Rect(recta.x-15, recta.y-15,recta.width+30,recta.height+30)));
+        Imgproc.rectangle(mRgba, recta.tl(),recta.br(), mRecColor, 4);
+        Imgproc.putText(mRgba, mStatus, new Point(recta.x,recta.y+recta.height+65), Core.FONT_HERSHEY_SIMPLEX ,      // front face
+                3, new Scalar(0,255,255,255),3);
        // Rect[] facesArray = faces.toArray();
         lastFaces=faces.toArray();
+
      //   lastImage=mRgba.clone();
+        if (lastFaces.length>0){
+            if ((lastFaces[0].x<recta.x)||(lastFaces[0].y<recta.y)||(lastFaces[0].x+lastFaces[0].width>recta.x+recta.width)||(lastFaces[0].y+lastFaces[0].height>recta.y+recta.height))
+                setRecState(State.ZOOMOUT);
+            else
+            {
+                if ((lastFaces[0].x>recta.x+marg)||(lastFaces[0].y>recta.y+marg)||(lastFaces[0].x+lastFaces[0].width+marg<recta.x+recta.width)||(lastFaces[0].y+lastFaces[0].height+marg<recta.y+recta.height))
+                    setRecState(State.ZOOMIN);
+                else {
+                    setRecState(State.GREEN);
+
+                }
+            }
+            if (State.GREEN==mState){
+                if ((mTrained)&&(mFaceRecognizer!=null)){
+                    int[] fa=new int[]{-1};
+                    double[] conf=new double[]{0.0};
+                    Mat mt=new Mat();
+                    Imgproc.resize(new Mat(mGray,lastFaces[0]),mt,mRecSize,0,0,Imgproc.INTER_CUBIC);
+                    // Imgproc.cvtColor(mt,mt,Imgproc.COLOR_RGBA2GRAY);
+                    // int pred = mFaceRecognizer.predict_label(mt);
+                    // Log.d(TAG,Integer.toString(pred));
+                    mFaceRecognizer.predict(mt,fa,conf);
+                    //if (conf[0]<19) if ((mCtr-->0)||(conf[0]<14.5)) saveMatToExtStorage(mt,"");
+                    if ((fa.length>0)/*&&(conf[0]>20)*/){
+
+                        Imgproc.rectangle(mRgba, lastFaces[0].tl(), lastFaces[0].br(), FACE_REC, 3);
+                        Imgproc.putText(mRgba, mPeople.get(fa[0])+ "~"+String.format ("%.1f", conf[0]), new Point(lastFaces[0].x,lastFaces[0].y+lastFaces[0].height+25), Core.FONT_HERSHEY_SIMPLEX ,      // front face
+                                1, FACE_REC,2);
+                    }
+                }
+            }
+       //     else
+         //       Imgproc.rectangle(mRgba, lastFaces[0].tl(), lastFaces[0].br(), FACE_RECT_COLOR  , 3);
+
+        }
+        else setRecState(State.RED);
+        /*
         for (int i = 0; i < lastFaces.length; i++) {
             if ((mTrained)&&(mFaceRecognizer!=null)){
                 int[] fa=new int[]{-1};
                 double[] conf=new double[]{0.0};
                 Mat mt=new Mat();
-                Imgproc.resize(new Mat(mGray,lastFaces[i]),mt,mRecSize);
+                Imgproc.resize(new Mat(mGray,lastFaces[i]),mt,mRecSize,0,0,Imgproc.INTER_CUBIC);
                // Imgproc.cvtColor(mt,mt,Imgproc.COLOR_RGBA2GRAY);
                // int pred = mFaceRecognizer.predict_label(mt);
                // Log.d(TAG,Integer.toString(pred));
                 mFaceRecognizer.predict(mt,fa,conf);
+                if (conf[0]<19) if ((mCtr-->0)||(conf[0]<14.5)) saveMatToExtStorage(mt,"");
+                if ((fa.length>0)&&(conf[0]>20))}
 
-                if ((fa.length>0)/*&&(conf[0]>20)*/){
-                    Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_REC, 3);
-                    Imgproc.putText(mRgba, mPeople.get(fa[0])+ "~"+String.format ("%.1f", conf[0]), new Point(lastFaces[i].x,lastFaces[i].y+lastFaces[i].height+25), Core.FONT_HERSHEY_SIMPLEX ,      // front face
+                  /*  Imgproc.rectangle(mGray, lastFaces[i].tl(), lastFaces[i].br(), FACE_REC, 3);
+                    Imgproc.putText(mGray, mPeople.get(fa[0])+ "~"+String.format ("%.1f", conf[0]), new Point(lastFaces[i].x,lastFaces[i].y+lastFaces[i].height+25), Core.FONT_HERSHEY_SIMPLEX ,      // front face
                             1, FACE_REC,2);
                 }
                 else
@@ -285,7 +350,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             else
 
             Imgproc.rectangle(mRgba, lastFaces[i].tl(), lastFaces[i].br(), FACE_RECT_COLOR, 3);
-        }
+        }*/
 
         return mRgba;
     }
@@ -445,8 +510,9 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             if ((mRecSize.height==0)||(mRecSize.width==0))
                 mRecSize=mt.size();
             else
-                Imgproc.resize(mt,mt,mRecSize);
+                Imgproc.resize(mt,mt,mRecSize,0,0,Imgproc.INTER_CUBIC);
             srcImages.add(mt);
+            saveMatToExtStorage(mt,"trained");
             MatOfInt matOfInt = new MatOfInt();
             ArrayList<Integer> lInx=new ArrayList<Integer>();
             lInx.add(inx);
@@ -543,27 +609,123 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     Camera.PictureCallback jpegCallback = new Camera.PictureCallback() {
         public void onPictureTaken(byte[] data, Camera camera) {
-            Camera.Size picSize=camera.getParameters().getPictureSize();
-           // camera.getParameters().getPictureFormat()
-            System.out.println(camera.getParameters().getPictureFormat()+ "[ "+camera.getParameters().getPictureSize().width+","+camera.getParameters().getPictureSize().height+" ]");//data.length);
-            Mat photoMat = new Mat(picSize.width, picSize.height, CvType.CV_8UC3);
 
-            photoMat.put(0, 0, data);
-            Mat greyPhoto=new Mat(picSize.width,picSize.height,CvType.CV_8UC1);
-            Imgproc.cvtColor(photoMat,greyPhoto,Imgproc.COLOR_RGB2GRAY);
-            Imgproc.resize(greyPhoto,greyPhoto,new Size(2096,1572));
+            //Camera.Size picSize=camera.getParameters().getPictureSize();
+           // camera.getParameters().getPictureFormat()
+           // System.out.println(camera.getParameters().getPictureFormat()+ "[ "+camera.getParameters().getPictureSize().width+","+camera.getParameters().getPictureSize().height+" ]");//data.length);
+           // MatOfByte raw=new MatOfByte(data);
+            Mat photoMat = Imgcodecs.imdecode(new MatOfByte(data), CV_LOAD_IMAGE_GRAYSCALE);
+            mOpenCvCameraView.disableView();
+            //Mat photoMat = new Mat(picSize.width, picSize.height, CvType.CV_8UC3);
+
+            //photoMat.put(0, 0, data);
+
+            Mat greyPhoto=photoMat;//new Mat(picSize.width,picSize.height,CvType.CV_8UC1);
+            //Imgproc.cvtColor(photoMat,greyPhoto,Imgproc.COLOR_RGB2GRAY);
+            ///Imgproc.resize(greyPhoto,greyPhoto,new Size(2096,1572));
             mBitmap = Bitmap.createBitmap(greyPhoto.width(), greyPhoto.height(), ARGB_8888);
             Utils.matToBitmap(greyPhoto, mBitmap);
-          /*  MatOfRect faces=getMatOfRectFaces(greyPhoto);
+            //imdecode();
+            MatOfRect faces=getMatOfRectFaces(greyPhoto);
             if (faces.toArray().length>0) {
                 mBitmap = Bitmap.createBitmap(faces.toArray()[0].width, faces.toArray()[0].height, ARGB_8888);
                 Utils.matToBitmap(new Mat(photoMat,faces.toArray()[0]), mBitmap);
-                mOpenCvCameraView.disableView();
-*/
+               // mOpenCvCameraView.disableView();
+
                 FragmentManager fm = getFragmentManager();
                 TestFragmentDialog testFragmentDialog = TestFragmentDialog.newInstance();
                 testFragmentDialog.show(fm, "tag");
-          //  }
+           }
+           else
+            {
+                mOpenCvCameraView.enableView();
+            }
         }
     };
+
+    public static boolean saveMatToExtStorage(Mat mat,String name_suffix){
+        String root = Environment.getExternalStorageDirectory().toString();
+        File myDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),"facerec_images");
+        myDir.mkdirs();
+        Random generator = new Random();
+        int n = 10000;
+        n = generator.nextInt(n);
+        String fname;
+        if (name_suffix.isEmpty()) {
+            fname = "Image-" + n + ".jpg";
+        }
+        else
+        {
+            fname = "Image-" + name_suffix + ".jpg";
+        }
+        File file = new File(myDir, fname);
+        Log.i(TAG, "" + file);
+        if (file.exists())
+            file.delete();
+        try {
+            Bitmap bm = Bitmap.createBitmap(mat.width(), mat.height(), ARGB_8888);
+            Utils.matToBitmap(mat, bm);
+            FileOutputStream out = new FileOutputStream(file);
+            bm.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            out.flush();
+            out.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void setRecState(State sta){
+        if (mState!=sta) {
+            switch (mState){
+                case GREEN:{
+                    if (mTimer!=null)
+                    {
+                        mTimer.cancel();
+                        mTimer=null;
+                    }
+                    break;
+                }
+            }
+            switch (sta) {
+                case RED:{
+                    mRecColor=new Scalar(255,0,0,255);
+                    mStatus="Slozhi si liceto w kwadratcheto";
+                }
+                case ZOOMIN:{
+                    mRecColor=new Scalar(255,0,0,255);
+                    mStatus="PRIBLIZHI";
+                    break;
+                }
+                case PHOTO: {
+                    mRecColor=new Scalar(0,0,255,255);
+                    mStatus="SEGA SHE ZASNEME";
+                    break;
+                }
+                case ZOOMOUT:{
+                    mRecColor=new Scalar(255,0,0,255);
+                    mStatus="OTDALECHI";
+                    break;
+                }
+                case GREEN: {
+                    mRecColor=new Scalar(0,255,0,255);
+                    mStatus="SUPER ZADRAZH !";
+                    /*mTimer = new CountDownTimer(5000, 1000) {
+                        @Override
+                        public void onTick(long l) {
+
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            setRecState(State.PHOTO);
+                        }
+                    };*/
+                    break;
+                }
+            }
+            mState=sta;
+        }
+    }
 }
