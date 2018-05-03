@@ -21,9 +21,11 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -76,6 +78,13 @@ import static org.opencv.imgcodecs.Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE;
 import static org.opencv.imgcodecs.Imgcodecs.imdecode;
 
 public class MainActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2,DialogInterface.OnDismissListener {
+
+    private Camera.AutoFocusCallback mOnFocused = new Camera.AutoFocusCallback() {
+        @Override
+        public void onAutoFocus(boolean b, Camera camera) {
+            setRecState(State.PHOTO);
+        }
+    };
 
     enum State
     {
@@ -244,6 +253,19 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
                     }
 
                     mOpenCvCameraView.enableView();
+                    ((CustomJavaCameraView)mOpenCvCameraView).setOnTouchListener(new View.OnTouchListener() {
+                        @Override
+                        public boolean onTouch(View view, MotionEvent motionEvent) {
+                            DisplayMetrics displayMetrics = new DisplayMetrics();
+                            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                            Log.d(TAG,"Setting res to "+displayMetrics.toString());
+                            ((CustomJavaCameraView)view).setMaxResolution();
+
+                            return false;
+                        }
+                    });
+                 //   ((CustomJavaCameraView)mOpenCvCameraView)
+                //    ((CustomJavaCameraView)mOpenCvCameraView).setMaxResolution();
                     mFaceRecognizer= LBPHFaceRecognizer.create();//1,8,8,8,0.7);
                     //((CustomJavaCameraView)mOpenCvCameraView).initCameraParams();
                 } break;
@@ -278,7 +300,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        final int marg=35;
+        final int marg=75;
         mRgba = inputFrame.rgba();
         mGray = inputFrame.gray();
 
@@ -321,8 +343,8 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
                     }
                 }
             }
-       //     else
-         //       Imgproc.rectangle(mRgba, lastFaces[0].tl(), lastFaces[0].br(), FACE_RECT_COLOR  , 3);
+            else
+                Imgproc.rectangle(mRgba, lastFaces[0].tl(), lastFaces[0].br(), FACE_RECT_COLOR  , 3);
 
         }
         else setRecState(State.RED);
@@ -413,6 +435,10 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
+
+
+
+
 
     public void onDestroy() {
         super.onDestroy();
@@ -680,6 +706,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
         if (mState!=sta) {
             switch (mState){
                 case GREEN:{
+                    ((CustomJavaCameraView)mOpenCvCameraView).stopFocus();
                     if (mTimer!=null)
                     {
                         mTimer.cancel();
@@ -711,6 +738,7 @@ public class MainActivity extends Activity implements CameraBridgeViewBase.CvCam
                 case GREEN: {
                     mRecColor=new Scalar(0,255,0,255);
                     mStatus="SUPER ZADRAZH !";
+                    ((CustomJavaCameraView)mOpenCvCameraView).startFocus(new android.graphics.Rect(recta.x,recta.y,recta.width+recta.x,recta.height+recta.y),mOnFocused);
                     /*mTimer = new CountDownTimer(5000, 1000) {
                         @Override
                         public void onTick(long l) {
